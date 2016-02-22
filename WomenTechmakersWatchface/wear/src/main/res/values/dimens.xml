@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="analog_hand_stroke">3dp</dimen>
+    <dimen name="interactive_text_size">20dp</dimen>
+    <dimen name="interactive_text_size_round">25dp</dimen>
+    <dimen name="interactive_x_offset">15dp</dimen>
+    <dimen name="interactive_x_offset_round">25dp</dimen>
+    <dimen name="interactive_y_offset">72dp</dimen>
+    <dimen name="interactive_y_offset_round">84dp</dimen>
+</resources>
