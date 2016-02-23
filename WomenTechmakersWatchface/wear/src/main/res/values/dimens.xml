@@ -7,4 +7,5 @@
     <dimen name="interactive_x_offset_round">25dp</dimen>
     <dimen name="interactive_y_offset">72dp</dimen>
     <dimen name="interactive_y_offset_round">84dp</dimen>
+    <dimen name="date_size">16dp</dimen>
 </resources>

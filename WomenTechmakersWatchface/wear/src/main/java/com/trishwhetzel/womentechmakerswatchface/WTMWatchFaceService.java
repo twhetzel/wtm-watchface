@@ -19,6 +19,7 @@ import android.support.v7.graphics.Palette;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
+import android.text.format.Time;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
@@ -57,9 +58,9 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
 
         private static final float HOUR_STROKE_WIDTH = 5f; //was 5
         private static final float MINUTE_STROKE_WIDTH = 3f; //was 3
-        private static final float SECOND_TICK_STROKE_WIDTH = 2f;
+        private static final float SECOND_TICK_STROKE_WIDTH = 1f; //was 2
 
-        private static final float CENTER_GAP_AND_CIRCLE_RADIUS = 4f;
+        private static final float CENTER_GAP_AND_CIRCLE_RADIUS = 4f; //was 4
 
         private static final int SHADOW_RADIUS = 6; //was 6
 
@@ -85,6 +86,10 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
         private Paint mSecondPaint;
         private Paint mTickAndCirclePaint;
 
+        private Time time;
+        private Paint datePaint;
+        private static final String DATE_FORMAT = "%02d.%02d.%d";
+
         private Paint mBackgroundPaint;
         private Bitmap mBackgroundBitmap;
         private Bitmap mGrayBackgroundBitmap;
@@ -97,7 +102,7 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
         private float mXOffset;
         private float mYOffset;
         private float mTextSpacingHeight;
-        //private int mScreenTextColor = Color.RED;
+        private int mScreenTextColor = Color.DKGRAY;
 
         private Rect mPeekCardBounds = new Rect();
 
@@ -124,21 +129,21 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
                     .build());
 
             mBackgroundPaint = new Paint();
-            mBackgroundPaint.setColor(Color.WHITE);
+            mBackgroundPaint.setColor(Color.BLACK);
 
             mBackgroundBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.wt_logo);
 
-            //Resources resources = WTMWatchFaceService.this.getResources();
+            Resources resources = WTMWatchFaceService.this.getResources();
 
             mTextPaint = new Paint();
-            //mTextPaint.setColor(mScreenTextColor);
+            mTextPaint.setColor(mScreenTextColor);
             mTextPaint.setTypeface(BOLD_TYPEFACE);
             mTextPaint.setAntiAlias(true);
 
             /* Set defaults for colors */
             mWatchHandColor = Color.WHITE;
-            mWatchHandHighlightColor = Color.BLUE;
-            mWatchHandShadowColor = Color.WHITE;
+            mWatchHandHighlightColor = Color.RED;
+            mWatchHandShadowColor = Color.BLACK;
 
             /* Set parameters to draw Hour hand */
             mHourPaint = new Paint();
@@ -161,15 +166,24 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             mSecondPaint.setColor(mWatchHandHighlightColor);
             mSecondPaint.setStrokeWidth(SECOND_TICK_STROKE_WIDTH);
             mSecondPaint.setAntiAlias(true);
-            mSecondPaint.setStrokeCap(Paint.Cap.ROUND);
+            mSecondPaint.setStrokeCap(Paint.Cap.SQUARE);
             mSecondPaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
 
+            /* Set parameters to draw hour marks around watchface*/
             mTickAndCirclePaint = new Paint();
             mTickAndCirclePaint.setColor(mWatchHandColor);
             mTickAndCirclePaint.setStrokeWidth(SECOND_TICK_STROKE_WIDTH);
             mTickAndCirclePaint.setAntiAlias(true);
             mTickAndCirclePaint.setStyle(Paint.Style.STROKE);
             mTickAndCirclePaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
+
+            /* Set parameters to draw date */
+            datePaint = new Paint();
+            datePaint.setColor(mWatchHandHighlightColor);
+            datePaint.setTextSize(resources.getDimension(R.dimen.date_size));
+            datePaint.setAntiAlias(true);
+            datePaint.setStyle(Paint.Style.FILL);
+            datePaint.setStrokeWidth(2);
 
             /* Extract colors from background image to improve watchface style. */
             Palette.generateAsync(
@@ -247,36 +261,44 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
 
         private void updateWatchHandStyle() {
             if (mAmbient) {
-                mHourPaint.setColor(Color.DKGRAY);
-                mMinutePaint.setColor(Color.DKGRAY);
-                //mSecondPaint.setColor(Color.GRAY);
-                //mTickAndCirclePaint.setColor(Color.GRAY);
+                //mHourPaint.setColor(Color.GRAY);
+                mHourPaint.setColor(mWatchHandColor);
+                //mMinutePaint.setColor(Color.GRAY);
+                mMinutePaint.setColor(mWatchHandColor);
+                mSecondPaint.setColor(Color.GRAY);
+                mTickAndCirclePaint.setColor(Color.GRAY);
+                datePaint.setColor(Color.GRAY);
 
                 mHourPaint.setAntiAlias(true);
                 mMinutePaint.setAntiAlias(true);
-                //mSecondPaint.setAntiAlias(false);
-                //mTickAndCirclePaint.setAntiAlias(false);
+                mSecondPaint.setAntiAlias(false);
+                mTickAndCirclePaint.setAntiAlias(false);
+                datePaint.setAntiAlias(false);
 
                 mHourPaint.clearShadowLayer();
                 mMinutePaint.clearShadowLayer();
-                //mSecondPaint.clearShadowLayer();
-                //mTickAndCirclePaint.clearShadowLayer();
+                mSecondPaint.clearShadowLayer();
+                mTickAndCirclePaint.clearShadowLayer();
+                datePaint.clearShadowLayer();
 
             } else {
                 mHourPaint.setColor(mWatchHandColor);
                 mMinutePaint.setColor(mWatchHandColor);
                 mSecondPaint.setColor(mWatchHandHighlightColor);
                 mTickAndCirclePaint.setColor(mWatchHandColor);
+                datePaint.setColor(mWatchHandHighlightColor);
 
                 mHourPaint.setAntiAlias(true);
                 mMinutePaint.setAntiAlias(true);
                 mSecondPaint.setAntiAlias(true);
                 mTickAndCirclePaint.setAntiAlias(true);
+                datePaint.setAntiAlias(true);
 
                 mHourPaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
                 mMinutePaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
                 mSecondPaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
                 mTickAndCirclePaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
+                datePaint.setShadowLayer(SHADOW_RADIUS, 0, 0, Color.GRAY);
             }
         }
 
@@ -313,8 +335,8 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             /*
              * Calculate lengths of different hands based on watch screen size.
              */
-            mSecondHandLength = (float) (mCenterX * 0.875);
-            mMinuteHandLength = (float) (mCenterX * 0.75);
+            mSecondHandLength = (float) (mCenterX * 0.85);  //was 0.875
+            mMinuteHandLength = (float) (mCenterX * 0.70); //was 0.75
             mHourHandLength = (float) (mCenterX * 0.5);
 
 
@@ -376,17 +398,17 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
              * cases where you want to allow users to select their own photos, this dynamically
              * creates them on top of the photo.
              */
-//            float innerTickRadius = mCenterX - 10;
-//            float outerTickRadius = mCenterX;
-//            for (int tickIndex = 0; tickIndex < 12; tickIndex++) {
-//                float tickRot = (float) (tickIndex * Math.PI * 2 / 12);
-//                float innerX = (float) Math.sin(tickRot) * innerTickRadius;
-//                float innerY = (float) -Math.cos(tickRot) * innerTickRadius;
-//                float outerX = (float) Math.sin(tickRot) * outerTickRadius;
-//                float outerY = (float) -Math.cos(tickRot) * outerTickRadius;
-//                canvas.drawLine(mCenterX + innerX, mCenterY + innerY,
-//                        mCenterX + outerX, mCenterY + outerY, mTickAndCirclePaint);
-//            }
+            float innerTickRadius = mCenterX - 10;
+            float outerTickRadius = mCenterX;
+            for (int tickIndex = 0; tickIndex < 12; tickIndex++) {
+                float tickRot = (float) (tickIndex * Math.PI * 2 / 12);
+                float innerX = (float) Math.sin(tickRot) * innerTickRadius;
+                float innerY = (float) -Math.cos(tickRot) * innerTickRadius;
+                float outerX = (float) Math.sin(tickRot) * outerTickRadius;
+                float outerY = (float) -Math.cos(tickRot) * outerTickRadius;
+                canvas.drawLine(mCenterX + innerX, mCenterY + innerY,
+                        mCenterX + outerX, mCenterY + outerY, mTickAndCirclePaint);
+            }
 
             /*
              * These calculations reflect the rotation in degrees per unit of time, e.g.,
@@ -400,6 +422,14 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
 
             final float hourHandOffset = mCalendar.get(Calendar.MINUTE) / 2f;
             final float hoursRotation = (mCalendar.get(Calendar.HOUR) * 30) + hourHandOffset;
+
+            /* display date */
+            int day_of_month = mCalendar.get(Calendar.DAY_OF_MONTH);
+            String dateText = String.valueOf(day_of_month);
+            float dateXOffset = computeXOffset(dateText, datePaint, bounds);
+            //float dateYOffset = computeDateYOffset(dateText, datePaint);
+            canvas.drawText(dateText, dateXOffset, mCenterY, datePaint);
+
 
             /*
              * Save the canvas state before we can begin to rotate it.
@@ -455,6 +485,27 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             }
         }
 
+        private float computeXOffset(String text, Paint paint, Rect watchBounds) {
+            float centerX = watchBounds.exactCenterX();
+            float timeLength = paint.measureText(text);
+            //return centerX - (timeLength / 2.0f);
+            return centerX + (mCenterX * 0.75f);
+        }
+
+//        private float computeTimeYOffset(String timeText, Paint timePaint, Rect watchBounds) {
+//            float centerY = watchBounds.exactCenterY();
+//            Rect textBounds = new Rect();
+//            timePaint.getTextBounds(timeText, 0, timeText.length(), textBounds);
+//            int textHeight = textBounds.height();
+//            return centerY + (textHeight / 2.0f);
+//        }
+
+//        private float computeDateYOffset(String dateText, Paint datePaint) {
+//            Rect textBounds = new Rect();
+//            datePaint.getTextBounds(dateText, 0, dateText.length(), textBounds);
+//            //return textBounds.height() + 10.0f;
+//            return textBounds.height() + 5.0f;
+//        }
 
         @Override
         public void onVisibilityChanged(boolean visible) {
