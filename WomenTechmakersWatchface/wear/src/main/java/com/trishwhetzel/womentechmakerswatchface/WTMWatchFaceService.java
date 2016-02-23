@@ -19,7 +19,6 @@ import android.support.v7.graphics.Palette;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
-import android.text.format.Time;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
@@ -86,9 +85,8 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
         private Paint mSecondPaint;
         private Paint mTickAndCirclePaint;
 
-        private Time time;
+        private Paint rectPaint;
         private Paint datePaint;
-        private static final String DATE_FORMAT = "%02d.%02d.%d";
 
         private Paint mBackgroundPaint;
         private Bitmap mBackgroundBitmap;
@@ -142,7 +140,7 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
 
             /* Set defaults for colors */
             mWatchHandColor = Color.WHITE;
-            mWatchHandHighlightColor = Color.RED;
+            mWatchHandHighlightColor = Color.BLUE;
             mWatchHandShadowColor = Color.BLACK;
 
             /* Set parameters to draw Hour hand */
@@ -176,6 +174,13 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             mTickAndCirclePaint.setAntiAlias(true);
             mTickAndCirclePaint.setStyle(Paint.Style.STROKE);
             mTickAndCirclePaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
+
+            /* set parameters to draw rectangle */
+            rectPaint = new Paint();
+            rectPaint.setColor(Color.LTGRAY);
+            rectPaint.setStrokeWidth(3);
+            rectPaint.setStyle(Paint.Style.STROKE);
+            rectPaint.setShadowLayer(SHADOW_RADIUS, 0, 0, Color.LTGRAY);
 
             /* Set parameters to draw date */
             datePaint = new Paint();
@@ -336,8 +341,8 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
              * Calculate lengths of different hands based on watch screen size.
              */
             mSecondHandLength = (float) (mCenterX * 0.85);  //was 0.875
-            mMinuteHandLength = (float) (mCenterX * 0.70); //was 0.75
-            mHourHandLength = (float) (mCenterX * 0.5);
+            mMinuteHandLength = (float) (mCenterX * 0.78); //was 0.75
+            mHourHandLength = (float) (mCenterX * 0.55);    //was 0.5
 
 
             /* Scale loaded background image (more efficient) if surface dimensions change. */
@@ -428,6 +433,10 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             String dateText = String.valueOf(day_of_month);
             float dateXOffset = computeXOffset(dateText, datePaint, bounds);
             //float dateYOffset = computeDateYOffset(dateText, datePaint);
+             /* display rectangle to hold date value */
+            //canvas.drawRect(30, 30, 60, 60, rectPaint);
+            canvas.drawRect(dateXOffset-2f, mCenterY+2f, dateXOffset+32f, mCenterY-25f, rectPaint);
+
             canvas.drawText(dateText, dateXOffset, mCenterY, datePaint);
 
 
