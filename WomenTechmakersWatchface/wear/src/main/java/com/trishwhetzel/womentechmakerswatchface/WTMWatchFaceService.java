@@ -14,6 +14,7 @@ import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
+import android.os.BatteryManager;
 import android.os.Bundle;
 import android.support.v7.graphics.Palette;
 import android.support.wearable.watchface.CanvasWatchFaceService;
@@ -55,8 +56,8 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
          */
         private static final int MSG_UPDATE_TIME = 0;
 
-        private static final float HOUR_STROKE_WIDTH = 7f; //was 5
-        private static final float MINUTE_STROKE_WIDTH = 5f; //was 3
+        private static final float HOUR_STROKE_WIDTH = 9f; //was 5
+        private static final float MINUTE_STROKE_WIDTH = 7f; //was 3
         private static final float SECOND_TICK_STROKE_WIDTH = 2f; //was 2
 
         private static final float CENTER_GAP_AND_CIRCLE_RADIUS = 4f; //was 4
@@ -89,8 +90,12 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
         private Paint rectBkgPaint;
         private Paint datePaint;
 
+        private int batteryLevel;
+        private Paint batteryPaint;
+
         private Paint mBackgroundPaint;
         private Bitmap mBackgroundBitmap;
+        private Bitmap mCircleTickBitmap;
         private Bitmap mGrayBackgroundBitmap;
 
         private boolean mAmbient;
@@ -119,7 +124,30 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
                 Log.d(TAG, "onCreate");
             }
             super.onCreate(holder);
-            /* initialize your watch face */
+
+            /* Determine current charging state */
+            IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+            Intent batteryStatus = WTMWatchFaceService.this.registerReceiver(null, ifilter);
+
+            // Are we charging / charged?
+            int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+            boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                    status == BatteryManager.BATTERY_STATUS_FULL;
+
+            // How are we charging?
+            int chargePlug = batteryStatus.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
+            boolean usbCharge = chargePlug == BatteryManager.BATTERY_PLUGGED_USB;
+            boolean acCharge = chargePlug == BatteryManager.BATTERY_PLUGGED_AC;
+            Log.d(TAG, "Battery Status " + status + " " + isCharging + " " + chargePlug + " " + usbCharge + "-" + acCharge);
+
+            // Get battery status level
+            batteryLevel = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+            int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+            float batteryPct = batteryLevel / (float)scale;
+            Log.d(TAG, "Battery level: "+batteryLevel);
+
+
+            /* Initialize your watch face */
             setWatchFaceStyle(new WatchFaceStyle.Builder(WTMWatchFaceService.this)
                     .setCardPeekMode(WatchFaceStyle.PEEK_MODE_SHORT)
                     .setBackgroundVisibility(WatchFaceStyle.BACKGROUND_VISIBILITY_INTERRUPTIVE)
@@ -128,10 +156,11 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
                     .build());
 
             mBackgroundPaint = new Paint();
-            mBackgroundPaint.setARGB(0, 255, 255, 255);
+            //mBackgroundPaint.setARGB(0, 255, 255, 255);
             mBackgroundPaint.setColor(Color.WHITE);
 
-            mBackgroundBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.wtsquare_01);
+            mBackgroundBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.logo_v2);
+            mCircleTickBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.circle_tick_grey);
 
             Resources resources = WTMWatchFaceService.this.getResources();
 
@@ -143,7 +172,7 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             /* Set defaults for colors */
             mWatchHandColor = Color.WHITE;
             mWatchHandHighlightColor = Color.BLUE;
-            mWatchHandShadowColor = Color.GRAY;
+            mWatchHandShadowColor = Color.LTGRAY;
 
             /* Set parameters to draw Hour hand */
             mHourPaint = new Paint();
@@ -182,7 +211,7 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             rectPaint.setColor(Color.LTGRAY);
             rectPaint.setStrokeWidth(3);
             rectPaint.setStyle(Paint.Style.STROKE);
-            //rectPaint.setShadowLayer(SHADOW_RADIUS, 0, 0, Color.LTGRAY);
+            //rectPaint.setShadowLayer(SHADOW_RADIUS, 0, 0, Color.BLACK);
 
             /* set parameters for background for rectangle */
             rectBkgPaint = new Paint ();
@@ -196,7 +225,16 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             datePaint.setStyle(Paint.Style.FILL);
             datePaint.setStrokeWidth(2);
 
-            /* Extract colors from background image to improve watchface style. */
+            /* Set parameters to draw battery level */
+            batteryPaint = new Paint();
+            batteryPaint.setColor(mWatchHandHighlightColor);
+            batteryPaint.setTextSize(resources.getDimensionPixelSize(R.dimen.battery_level));
+            //batteryPaint.setTextSkewX((float) -0.25);
+            batteryPaint.setAntiAlias(true);
+            batteryPaint.setStyle(Paint.Style.FILL);
+            batteryPaint.setStrokeWidth(2);
+
+            /* Extract colors from background image to improve watch face style. */
             Palette.generateAsync(
                     mBackgroundBitmap,
                     new Palette.PaletteAsyncListener() {
@@ -232,8 +270,6 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
 //                    }
 //                }
 //            });
-
-
 
             mCalendar = Calendar.getInstance();
         }
@@ -296,12 +332,14 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
                 mSecondPaint.setColor(mWatchHandHighlightColor);
                 mTickAndCirclePaint.setColor(mWatchHandColor);
                 datePaint.setColor(mWatchHandHighlightColor);
+                batteryPaint.setColor(mWatchHandHighlightColor);
 
                 mHourPaint.setAntiAlias(true);
                 mMinutePaint.setAntiAlias(true);
                 mSecondPaint.setAntiAlias(true);
                 mTickAndCirclePaint.setAntiAlias(true);
                 datePaint.setAntiAlias(true);
+                batteryPaint.setAntiAlias(true);
 
                 mHourPaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
                 mMinutePaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
@@ -344,9 +382,9 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             /*
              * Calculate lengths of different hands based on watch screen size.
              */
-            mSecondHandLength = (float) (mCenterX * 0.85);  //was 0.875
-            mMinuteHandLength = (float) (mCenterX * 0.75); //was 0.75
-            mHourHandLength = (float) (mCenterX * 0.55);    //was 0.5
+            mSecondHandLength = (float) (mCenterX * 0.825);  //was 0.875
+            mMinuteHandLength = (float) (mCenterX * 0.70); //was 0.75
+            mHourHandLength = (float) (mCenterX * 0.5);    //was 0.5
 
 
             /* Scale loaded background image (more efficient) if surface dimensions change. */
@@ -356,6 +394,11 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             mBackgroundBitmap = Bitmap.createScaledBitmap(mBackgroundBitmap,
                     (int) (mBackgroundBitmap.getWidth() * scaleWidth),
                     (int) (mBackgroundBitmap.getHeight() * scaleHeight), true);
+
+            /* Scale circle tick background image */
+            mCircleTickBitmap = Bitmap.createScaledBitmap(mCircleTickBitmap,
+                    (int) (mBackgroundBitmap.getWidth() * scaleWidth),
+                    (int) (mBackgroundBitmap.getHeight() *scaleHeight), true);
 
             /*
              * Create a gray version of the image only if it will look nice on the device in
@@ -396,7 +439,7 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
 
             /* draw your watch face */
             if (mAmbient && (mLowBitAmbient || mBurnInProtection)) {
-                canvas.drawColor(Color.WHITE); //was Black
+                canvas.drawColor(Color.BLACK); //was Black
             } else if (mAmbient) {
                 canvas.drawBitmap(mGrayBackgroundBitmap, 0, 0, mBackgroundPaint);
             } else {
@@ -404,21 +447,26 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             }
 
             /*
+             * Draw ticks using image
+             */
+            //canvas.drawBitmap(mCircleTickBitmap, 0, 0, null);
+
+            /*
              * Draw ticks. Usually you will want to bake this directly into the photo, but in
              * cases where you want to allow users to select their own photos, this dynamically
              * creates them on top of the photo.
              */
-//            float innerTickRadius = mCenterX - 10;
-//            float outerTickRadius = mCenterX;
-//            for (int tickIndex = 0; tickIndex < 12; tickIndex++) {
-//                float tickRot = (float) (tickIndex * Math.PI * 2 / 12);
-//                float innerX = (float) Math.sin(tickRot) * innerTickRadius;
-//                float innerY = (float) -Math.cos(tickRot) * innerTickRadius;
-//                float outerX = (float) Math.sin(tickRot) * outerTickRadius;
-//                float outerY = (float) -Math.cos(tickRot) * outerTickRadius;
-//                canvas.drawLine(mCenterX + innerX, mCenterY + innerY,
-//                        mCenterX + outerX, mCenterY + outerY, mTickAndCirclePaint);
-//            }
+            float innerTickRadius = mCenterX - 10;
+            float outerTickRadius = mCenterX;
+            for (int tickIndex = 0; tickIndex < 12; tickIndex++) {
+                float tickRot = (float) (tickIndex * Math.PI * 2 / 12);
+                float innerX = (float) Math.sin(tickRot) * innerTickRadius;
+                float innerY = (float) -Math.cos(tickRot) * innerTickRadius;
+                float outerX = (float) Math.sin(tickRot) * outerTickRadius;
+                float outerY = (float) -Math.cos(tickRot) * outerTickRadius;
+                canvas.drawLine(mCenterX + innerX, mCenterY + innerY,
+                        mCenterX + outerX, mCenterY + outerY, mTickAndCirclePaint);
+            }
 
             /*
              * These calculations reflect the rotation in degrees per unit of time, e.g.,
@@ -433,17 +481,21 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             final float hourHandOffset = mCalendar.get(Calendar.MINUTE) / 2f;
             final float hoursRotation = (mCalendar.get(Calendar.HOUR) * 30) + hourHandOffset;
 
-            /* display date */
+            /* Display Date */
             int day_of_month = mCalendar.get(Calendar.DAY_OF_MONTH);
             String dateText = String.valueOf(day_of_month);
             float dateXOffset = computeXOffset(dateText, datePaint, bounds);
             //float dateYOffset = computeDateYOffset(dateText, datePaint);
              /* display rectangle to hold date value */
             //canvas.drawRect(30, 30, 60, 60, rectPaint);
-            canvas.drawRect(dateXOffset-2f, mCenterY+2f, dateXOffset+32f, mCenterY-25f, rectBkgPaint);
-            canvas.drawRect(dateXOffset-2f, mCenterY+2f, dateXOffset+32f, mCenterY-25f, rectPaint);
-
+            canvas.drawRect(dateXOffset - 2f, mCenterY + 2f, dateXOffset + 32f, mCenterY - 25f, rectBkgPaint);
+            canvas.drawRect(dateXOffset - 2f, mCenterY + 2f, dateXOffset + 32f, mCenterY - 25f, rectPaint);
             canvas.drawText(dateText, dateXOffset, mCenterY, datePaint);
+
+            /* Display Battery Level */
+            String batterLevelPercentage = String.valueOf(batteryLevel)+"%";
+            float batteryXOffset = computeBatteryXOffset(batterLevelPercentage, batteryPaint, bounds);
+            canvas.drawText(batterLevelPercentage, batteryXOffset, mCenterY, batteryPaint);
 
 
             /*
@@ -505,6 +557,12 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             float timeLength = paint.measureText(text);
             //return centerX - (timeLength / 2.0f);
             return centerX + (mCenterX * 0.75f);
+        }
+
+        private float computeBatteryXOffset(String text, Paint paint, Rect watchBounds) {
+            float centerX = watchBounds.exactCenterX();
+            float battLength = paint.measureText(text);
+            return centerX - (mCenterX * 0.85f );
         }
 
 //        private float computeTimeYOffset(String timeText, Paint timePaint, Rect watchBounds) {
@@ -577,7 +635,6 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
                 return;
             }
             mRegisteredTimeZoneReceiver = false;
-            WTMWatchFaceService.this.unregisterReceiver(mTimeZoneReceiver);
         }
     }
 
