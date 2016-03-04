@@ -24,6 +24,7 @@ import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
 
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
@@ -144,7 +145,7 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             batteryLevel = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
             int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
             float batteryPct = batteryLevel / (float)scale;
-            Log.d(TAG, "Battery level: "+batteryLevel);
+            Log.d(TAG, "Battery level: " + batteryLevel);
 
 
             /* Initialize your watch face */
@@ -209,9 +210,10 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             /* set parameters to draw rectangle */
             rectPaint = new Paint();
             rectPaint.setColor(Color.LTGRAY);
+            //rectPaint.setColor(Color.parseColor("#64b5f6"));
             rectPaint.setStrokeWidth(3);
             rectPaint.setStyle(Paint.Style.STROKE);
-            //rectPaint.setShadowLayer(SHADOW_RADIUS, 0, 0, Color.BLACK);
+            //rectPaint.setShadowLayer(SHADOW_RADIUS, 2, 2, Color.GRAY);
 
             /* set parameters for background for rectangle */
             rectBkgPaint = new Paint ();
@@ -313,6 +315,7 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
                 mSecondPaint.setColor(Color.GRAY);
                 mTickAndCirclePaint.setColor(Color.GRAY);
                 datePaint.setColor(Color.GRAY);
+                batteryPaint.setColor(Color.GRAY);
 
                 mHourPaint.setAntiAlias(true);
                 mMinutePaint.setAntiAlias(true);
@@ -447,11 +450,6 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             }
 
             /*
-             * Draw ticks using image
-             */
-            //canvas.drawBitmap(mCircleTickBitmap, 0, 0, null);
-
-            /*
              * Draw ticks. Usually you will want to bake this directly into the photo, but in
              * cases where you want to allow users to select their own photos, this dynamically
              * creates them on top of the photo.
@@ -482,15 +480,23 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             final float hoursRotation = (mCalendar.get(Calendar.HOUR) * 30) + hourHandOffset;
 
             /* Display Date */
-            int day_of_month = mCalendar.get(Calendar.DAY_OF_MONTH);
-            String dateText = String.valueOf(day_of_month);
+            int dayOfMonth = mCalendar.get(Calendar.DAY_OF_MONTH);
+            String formattedDayOfMonth = new SimpleDateFormat("EEE dd").format(mCalendar.getTime());
+            //Log.d(TAG, "Day of month formatted: "+formattedDayOfMonth+" No format: "+dayOfMonth);
+
+            String dateText = String.valueOf(formattedDayOfMonth);
             float dateXOffset = computeXOffset(dateText, datePaint, bounds);
             //float dateYOffset = computeDateYOffset(dateText, datePaint);
              /* display rectangle to hold date value */
             //canvas.drawRect(30, 30, 60, 60, rectPaint);
-            canvas.drawRect(dateXOffset - 2f, mCenterY + 2f, dateXOffset + 32f, mCenterY - 25f, rectBkgPaint);
-            canvas.drawRect(dateXOffset - 2f, mCenterY + 2f, dateXOffset + 32f, mCenterY - 25f, rectPaint);
-            canvas.drawText(dateText, dateXOffset, mCenterY, datePaint);
+            //canvas.drawRect(dateXOffset - 3f, mCenterY + 4f, dateXOffset + 28f, mCenterY - 23f, rectBkgPaint);
+            //canvas.drawRect(dateXOffset - 3f, mCenterY + 4f, dateXOffset + 28f, mCenterY - 23f, rectPaint);
+            //canvas.drawText(dateText, dateXOffset, mCenterY, datePaint);
+
+            /* display rectangle to hold day and date */
+            canvas.drawRect(dateXOffset - 21f, mCenterY + 4f, dateXOffset + 28f, mCenterY - 23f, rectBkgPaint);
+            //canvas.drawRect(dateXOffset - 19f, mCenterY + 4f, dateXOffset + 28f, mCenterY - 23f, rectPaint);
+            canvas.drawText(dateText, dateXOffset - 21f, mCenterY, datePaint);
 
             /* Determine current charging state */
             IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
@@ -568,7 +574,7 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
         private float computeBatteryXOffset(String text, Paint paint, Rect watchBounds) {
             float centerX = watchBounds.exactCenterX();
             float battLength = paint.measureText(text);
-            return centerX - (mCenterX * 0.85f );
+            return centerX - (mCenterX * 0.9f);
         }
 
 //        private float computeTimeYOffset(String timeText, Paint timePaint, Rect watchBounds) {
