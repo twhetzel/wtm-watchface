@@ -7,6 +7,6 @@
     <dimen name="interactive_x_offset_round">25dp</dimen>
     <dimen name="interactive_y_offset">72dp</dimen>
     <dimen name="interactive_y_offset_round">84dp</dimen>
-    <dimen name="date_size">16dp</dimen>
-    <dimen name="battery_level">16dp</dimen>
+    <dimen name="date_size">14dp</dimen>
+    <dimen name="battery_level">14dp</dimen>
 </resources>
