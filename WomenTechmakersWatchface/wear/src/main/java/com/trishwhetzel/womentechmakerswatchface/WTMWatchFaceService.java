@@ -492,10 +492,16 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             canvas.drawRect(dateXOffset - 2f, mCenterY + 2f, dateXOffset + 32f, mCenterY - 25f, rectPaint);
             canvas.drawText(dateText, dateXOffset, mCenterY, datePaint);
 
+            /* Determine current charging state */
+            IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+            Intent batteryStatus = WTMWatchFaceService.this.registerReceiver(null, ifilter);
+            // Get battery status level
+            batteryLevel = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+
             /* Display Battery Level */
-            String batterLevelPercentage = String.valueOf(batteryLevel)+"%";
-            float batteryXOffset = computeBatteryXOffset(batterLevelPercentage, batteryPaint, bounds);
-            canvas.drawText(batterLevelPercentage, batteryXOffset, mCenterY, batteryPaint);
+            String batteryLevelPercentage = String.valueOf(batteryLevel)+"%";
+            float batteryXOffset = computeBatteryXOffset(batteryLevelPercentage, batteryPaint, bounds);
+            canvas.drawText(batteryLevelPercentage, batteryXOffset, mCenterY, batteryPaint);
 
 
             /*
