@@ -386,8 +386,8 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
              * Calculate lengths of different hands based on watch screen size.
              */
             mSecondHandLength = (float) (mCenterX * 0.825);  //was 0.875
-            mMinuteHandLength = (float) (mCenterX * 0.70); //was 0.75
-            mHourHandLength = (float) (mCenterX * 0.5);    //was 0.5
+            mMinuteHandLength = (float) (mCenterX * 0.80); //was 0.75
+            mHourHandLength = (float) (mCenterX * 0.52);    //was 0.5
 
 
             /* Scale loaded background image (more efficient) if surface dimensions change. */
