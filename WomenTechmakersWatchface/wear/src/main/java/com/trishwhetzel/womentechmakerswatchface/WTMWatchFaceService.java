@@ -297,6 +297,7 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
                 mHourPaint.setColor(Color.GRAY);
                 mMinutePaint.setColor(Color.GRAY);
                 mSecondPaint.setColor(Color.GRAY);
+                mTickAndCirclePaint.setColor(Color.GRAY);
                 datePaint.setColor(Color.GRAY);
                 batteryPaint.setColor(Color.GRAY);
 
