@@ -100,6 +100,7 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
         private Paint mBackgroundPaint;
         private Bitmap mBackgroundBitmap;
         private Bitmap mGrayBackgroundBitmap;
+        private Bitmap mAmbientBackgroundBitmap;
 
         private boolean mAmbient;
         private boolean mLowBitAmbient;
@@ -159,6 +160,7 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             mBackgroundPaint.setColor(Color.BLACK);
 
             mBackgroundBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.logo_v2);
+            mAmbientBackgroundBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ambient_logo);
 
             Resources resources = WTMWatchFaceService.this.getResources();
 
@@ -298,8 +300,9 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
                 mMinutePaint.setColor(Color.GRAY);
                 mSecondPaint.setColor(Color.GRAY);
                 mTickAndCirclePaint.setColor(Color.GRAY);
-                datePaint.setColor(Color.GRAY);
-                batteryPaint.setColor(Color.GRAY);
+                rectBkgPaint.setColor(Color.TRANSPARENT);
+                datePaint.setColor(Color.WHITE);
+                batteryPaint.setColor(Color.WHITE);
 
                 mHourPaint.setAntiAlias(false);
                 mMinutePaint.setAntiAlias(false);
@@ -316,6 +319,7 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
                 mMinutePaint.setColor(mWatchHandColor);
                 mSecondPaint.setColor(mWatchHandHighlightColor);
                 mTickAndCirclePaint.setColor(mWatchHandColor);
+                rectBkgPaint.setColor(Color.WHITE);
                 datePaint.setColor(mWatchHandHighlightColor);
                 batteryPaint.setColor(mWatchHandHighlightColor);
 
@@ -390,7 +394,10 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
              * efficient to create a black/white version (png, etc.) and load that when you need it.
              */
             if (!mBurnInProtection && !mLowBitAmbient) {
-                initGrayBackgroundBitmap();
+                //initGrayBackgroundBitmap();
+                mAmbientBackgroundBitmap = Bitmap.createScaledBitmap(mAmbientBackgroundBitmap,
+                        (int) (mAmbientBackgroundBitmap.getWidth() * scaleWidth),
+                        (int) (mAmbientBackgroundBitmap.getHeight() * scaleHeight), true);
             }
         }
 
@@ -418,9 +425,10 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
 
             /* draw your watch face */
             if (mAmbient && (mLowBitAmbient || mBurnInProtection)) {
-                canvas.drawColor(Color.BLACK); //was Black
+                canvas.drawColor(Color.BLACK);
             } else if (mAmbient) {
-                canvas.drawBitmap(mGrayBackgroundBitmap, 0, 0, mBackgroundPaint);
+                //canvas.drawBitmap(mGrayBackgroundBitmap, 0, 0, mBackgroundPaint);
+                canvas.drawBitmap(mAmbientBackgroundBitmap, 0, 0, mBackgroundPaint);
             } else {
                 canvas.drawBitmap(mBackgroundBitmap, 0, 0, mBackgroundPaint);
             }
