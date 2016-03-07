@@ -16,6 +16,8 @@ import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.os.BatteryManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v7.graphics.Palette;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceService;
@@ -92,6 +94,7 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
         private Paint datePaint;
 
         private int batteryLevel;
+
         private Paint batteryPaint;
 
         private Paint mBackgroundPaint;
@@ -119,6 +122,33 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             }
         };
 
+//        boolean mRegisteredBatteryPercentageReceiver = false;
+//        private BroadcastReceiver mBatInfoReceiver = new BroadcastReceiver() {
+//            @Override
+//            public void onReceive(Context arg0, Intent intent) {
+//                batteryLevel = String.valueOf(intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0));
+//            }
+//        };
+
+        /* Handler to update the time once a second in interactive mode. */
+        private final Handler mUpdateTimeHandler = new Handler() {
+            @Override
+            public void handleMessage(Message message) {
+
+                if (Log.isLoggable(TAG, Log.DEBUG)) {
+                    Log.d(TAG, "updating time");
+                }
+                invalidate();
+                if (shouldTimerBeRunning()) {
+                    long timeMs = System.currentTimeMillis();
+                    long delayMs = INTERACTIVE_UPDATE_RATE_MS
+                            - (timeMs % INTERACTIVE_UPDATE_RATE_MS);
+                    mUpdateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, delayMs);
+                }
+
+            }
+        };
+
         @Override
         public void onCreate(SurfaceHolder holder) {
             if (Log.isLoggable(TAG, Log.DEBUG)) {
@@ -127,25 +157,25 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             super.onCreate(holder);
 
             /* Determine current charging state */
-            IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-            Intent batteryStatus = WTMWatchFaceService.this.registerReceiver(null, ifilter);
-
-            // Are we charging / charged?
-            int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
-            boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
-                    status == BatteryManager.BATTERY_STATUS_FULL;
-
-            // How are we charging?
-            int chargePlug = batteryStatus.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
-            boolean usbCharge = chargePlug == BatteryManager.BATTERY_PLUGGED_USB;
-            boolean acCharge = chargePlug == BatteryManager.BATTERY_PLUGGED_AC;
-            Log.d(TAG, "Battery Status " + status + " " + isCharging + " " + chargePlug + " " + usbCharge + "-" + acCharge);
-
-            // Get battery status level
-            batteryLevel = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-            int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-            float batteryPct = batteryLevel / (float)scale;
-            Log.d(TAG, "Battery level: " + batteryLevel);
+//            IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+//            Intent batteryStatus = WTMWatchFaceService.this.registerReceiver(null, ifilter);
+//
+//            // Are we charging / charged?
+//            int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+//            boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
+//                    status == BatteryManager.BATTERY_STATUS_FULL;
+//
+//            // How are we charging?
+//            int chargePlug = batteryStatus.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
+//            boolean usbCharge = chargePlug == BatteryManager.BATTERY_PLUGGED_USB;
+//            boolean acCharge = chargePlug == BatteryManager.BATTERY_PLUGGED_AC;
+//            Log.d(TAG, "Battery Status " + status + " " + isCharging + " " + chargePlug + " " + usbCharge + "-" + acCharge);
+//
+//            // Get battery status level
+//            batteryLevel = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+//            int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+//            float batteryPct = batteryLevel / (float)scale;
+//            Log.d(TAG, "Battery level: " + batteryLevel);
 
 
             /* Initialize your watch face */
@@ -157,11 +187,10 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
                     .build());
 
             mBackgroundPaint = new Paint();
-            //mBackgroundPaint.setARGB(0, 255, 255, 255);
-            mBackgroundPaint.setColor(Color.WHITE);
+            mBackgroundPaint.setColor(Color.BLACK);
 
             mBackgroundBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.logo_v2);
-            mCircleTickBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.circle_tick_grey);
+            //mCircleTickBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.circle_tick_grey);
 
             Resources resources = WTMWatchFaceService.this.getResources();
 
@@ -171,7 +200,7 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             mTextPaint.setAntiAlias(true);
 
             /* Set defaults for colors */
-            mWatchHandColor = Color.WHITE;
+            mWatchHandColor = Color.GRAY;
             mWatchHandHighlightColor = Color.BLUE;
             mWatchHandShadowColor = Color.LTGRAY;
 
@@ -277,6 +306,12 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
         }
 
         @Override
+        public void onDestroy() {
+            mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
+            super.onDestroy();
+        }
+
+        @Override
         public void onPropertiesChanged(Bundle properties) {
             super.onPropertiesChanged(properties);
             /* get device features (burn-in, low-bit ambient) */
@@ -305,7 +340,9 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
 
             updateWatchHandStyle();
 
-            invalidate();
+            //invalidate();
+            /* Check and trigger whether or not timer should be running (only in active mode). */
+            updateTimer();
         }
 
         private void updateWatchHandStyle() {
@@ -317,10 +354,10 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
                 datePaint.setColor(Color.GRAY);
                 batteryPaint.setColor(Color.GRAY);
 
-                mHourPaint.setAntiAlias(true);
-                mMinutePaint.setAntiAlias(true);
+                mHourPaint.setAntiAlias(false);
+                mMinutePaint.setAntiAlias(false);
                 mSecondPaint.setAntiAlias(false);
-                mTickAndCirclePaint.setAntiAlias(true);
+                mTickAndCirclePaint.setAntiAlias(false);
                 datePaint.setAntiAlias(false);
 
                 mHourPaint.clearShadowLayer();
@@ -370,7 +407,7 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
         @Override
         public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) {
             if (Log.isLoggable(TAG, Log.VERBOSE)) {
-                Log.v(TAG, "onDraw");
+                Log.v(TAG, "onSurfaceChanged");
             }
             super.onSurfaceChanged(holder, format, width, height);
 
@@ -386,7 +423,7 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
              * Calculate lengths of different hands based on watch screen size.
              */
             mSecondHandLength = (float) (mCenterX * 0.825);  //was 0.875
-            mMinuteHandLength = (float) (mCenterX * 0.80); //was 0.75
+            mMinuteHandLength = (float) (mCenterX * 0.75); //was 0.75
             mHourHandLength = (float) (mCenterX * 0.52);    //was 0.5
 
 
@@ -399,9 +436,9 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
                     (int) (mBackgroundBitmap.getHeight() * scaleHeight), true);
 
             /* Scale circle tick background image */
-            mCircleTickBitmap = Bitmap.createScaledBitmap(mCircleTickBitmap,
-                    (int) (mBackgroundBitmap.getWidth() * scaleWidth),
-                    (int) (mBackgroundBitmap.getHeight() *scaleHeight), true);
+//            mCircleTickBitmap = Bitmap.createScaledBitmap(mCircleTickBitmap,
+//                    (int) (mBackgroundBitmap.getWidth() * scaleWidth),
+//                    (int) (mBackgroundBitmap.getHeight() *scaleHeight), true);
 
             /*
              * Create a gray version of the image only if it will look nice on the device in
@@ -435,7 +472,7 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {
             if (Log.isLoggable(TAG, Log.VERBOSE)) {
-                Log.v(TAG, "onDraw");
+              Log.v(TAG, "onDraw");
             }
             long now = System.currentTimeMillis();
             mCalendar.setTimeInMillis(now);
@@ -480,7 +517,7 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             final float hoursRotation = (mCalendar.get(Calendar.HOUR) * 30) + hourHandOffset;
 
             /* Display Date */
-            int dayOfMonth = mCalendar.get(Calendar.DAY_OF_MONTH);
+            //int dayOfMonth = mCalendar.get(Calendar.DAY_OF_MONTH);
             String formattedDayOfMonth = new SimpleDateFormat("EEE dd").format(mCalendar.getTime());
             //Log.d(TAG, "Day of month formatted: "+formattedDayOfMonth+" No format: "+dayOfMonth);
 
@@ -489,19 +526,18 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             //float dateYOffset = computeDateYOffset(dateText, datePaint);
              /* display rectangle to hold date value */
             //canvas.drawRect(30, 30, 60, 60, rectPaint);
-            //canvas.drawRect(dateXOffset - 3f, mCenterY + 4f, dateXOffset + 28f, mCenterY - 23f, rectBkgPaint);
-            //canvas.drawRect(dateXOffset - 3f, mCenterY + 4f, dateXOffset + 28f, mCenterY - 23f, rectPaint);
-            //canvas.drawText(dateText, dateXOffset, mCenterY, datePaint);
+//            canvas.drawRect(dateXOffset - 3f, mCenterY + 4f, dateXOffset + 28f, mCenterY - 23f, rectBkgPaint);
+//            canvas.drawRect(dateXOffset - 3f, mCenterY + 4f, dateXOffset + 28f, mCenterY - 23f, rectPaint);
+//            canvas.drawText(dateText, dateXOffset, mCenterY, datePaint);
 
             /* display rectangle to hold day and date */
             canvas.drawRect(dateXOffset - 21f, mCenterY + 4f, dateXOffset + 28f, mCenterY - 23f, rectBkgPaint);
-            //canvas.drawRect(dateXOffset - 19f, mCenterY + 4f, dateXOffset + 28f, mCenterY - 23f, rectPaint);
             canvas.drawText(dateText, dateXOffset - 21f, mCenterY, datePaint);
 
             /* Determine current charging state */
             IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
             Intent batteryStatus = WTMWatchFaceService.this.registerReceiver(null, ifilter);
-            // Get battery status level
+            //Get battery status level
             batteryLevel = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
 
             /* Display Battery Level */
@@ -558,10 +594,13 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
                 canvas.drawRect(mPeekCardBounds, mBackgroundPaint);
             }
 
-            /* Draw every frame as long as we're visible and in interactive mode. */
-            if ((isVisible()) && (!mAmbient)) {
-                invalidate();
-            }
+            /* Draw every frame as long as we're visible and in interactive mode.
+             * -- Sweeping Watch face with smooth second hand -- DO NOT USE, TOO BATTERY INTENSIVE
+             */
+//            if ((isVisible()) && (!mAmbient)) {
+//                //Log.d(TAG, "Should not be in ambient");
+//                invalidate();
+//            }
         }
 
         private float computeXOffset(String text, Paint paint, Rect watchBounds) {
@@ -604,13 +643,15 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             } else {
                 unregisterReceiver();
             }
+
+            /* Check and trigger whether or not timer should be running (only in active mode). */
+            updateTimer();
         }
 
         @Override
         public void onApplyWindowInsets(WindowInsets insets) {
-            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG, "onApplyWindowInsets: " + (insets.isRound() ? "round" : "square"));
-            }
+            Log.d(TAG, "onApplyWindowInsets: " + (insets.isRound() ? "round" : "square"));
+
             super.onApplyWindowInsets(insets);
 
             /** Loads offsets / text size based on device type (square vs. round). */
@@ -634,19 +675,67 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
         }
 
         private void registerReceiver() {
-            if (mRegisteredTimeZoneReceiver) {
-                return;
+            Log.d(TAG, "Registering");
+
+//            if (mRegisteredTimeZoneReceiver) {
+//                return;
+//            }
+//            mRegisteredTimeZoneReceiver = true;
+//            IntentFilter filter = new IntentFilter(Intent.ACTION_TIMEZONE_CHANGED);
+//            WTMWatchFaceService.this.registerReceiver(mTimeZoneReceiver, filter);
+
+            if (!mRegisteredTimeZoneReceiver) {
+                mRegisteredTimeZoneReceiver = true;
+                IntentFilter filter = new IntentFilter(Intent.ACTION_TIMEZONE_CHANGED);
+                WTMWatchFaceService.this.registerReceiver(mTimeZoneReceiver, filter);
             }
-            mRegisteredTimeZoneReceiver = true;
-            IntentFilter filter = new IntentFilter(Intent.ACTION_TIMEZONE_CHANGED);
-            WTMWatchFaceService.this.registerReceiver(mTimeZoneReceiver, filter);
+
+            // Register battery level
+//            if (!mRegisteredBatteryPercentageReceiver) {
+//                mRegisteredBatteryPercentageReceiver = true;
+//                IntentFilter filterBattery = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+//                WTMWatchFaceService.this.registerReceiver(mBatInfoReceiver, filterBattery);
+//            }
         }
 
         private void unregisterReceiver() {
-            if (!mRegisteredTimeZoneReceiver) {
-                return;
+            Log.d(TAG, "Unregistering");
+//            if (!mRegisteredTimeZoneReceiver) {
+//                return;
+//            }
+//            mRegisteredTimeZoneReceiver = false;
+
+            if (mRegisteredTimeZoneReceiver) {
+                mRegisteredTimeZoneReceiver = false;
+                WTMWatchFaceService.this.unregisterReceiver(mTimeZoneReceiver);
             }
-            mRegisteredTimeZoneReceiver = false;
+
+            // Unregister battery receiver
+//            if (mRegisteredBatteryPercentageReceiver) {
+//                mRegisteredBatteryPercentageReceiver = false;
+//                WTMWatchFaceService.this.unregisterReceiver(mBatInfoReceiver);
+//            }
+        }
+
+        /**
+         * Starts/stops the {@link #mUpdateTimeHandler} timer based on the state of the watch face.
+         */
+        private void updateTimer() {
+            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                Log.d(TAG, "updateTimer");
+            }
+            mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
+            if (shouldTimerBeRunning()) {
+                mUpdateTimeHandler.sendEmptyMessage(MSG_UPDATE_TIME);
+            }
+        }
+
+        /**
+         * Returns whether the {@link #mUpdateTimeHandler} timer should be running. The timer
+         * should only run in active mode.
+         */
+        private boolean shouldTimerBeRunning() {
+            return isVisible() && !mAmbient;
         }
     }
 
