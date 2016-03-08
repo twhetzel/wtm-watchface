@@ -464,10 +464,13 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             final float hoursRotation = (mCalendar.get(Calendar.HOUR) * 30) + hourHandOffset;
 
             /* Display Date */
-            String formattedDayOfMonth = new SimpleDateFormat("EEE dd").format(mCalendar.getTime());
+            String formattedDayOfMonth = new SimpleDateFormat("EEE").format(mCalendar.getTime());
+            String dayText = String.valueOf(formattedDayOfMonth);
+            float dateXOffset = computeXOffset(dayText, datePaint, bounds);
 
-            String dateText = String.valueOf(formattedDayOfMonth);
-            float dateXOffset = computeXOffset(dateText, datePaint, bounds);
+            String formattedDateOfMonth = new SimpleDateFormat("dd").format(mCalendar.getTime());
+            String dateText = String.valueOf(formattedDateOfMonth);
+
             //float dateYOffset = computeDateYOffset(dateText, datePaint);
              /* display rectangle to hold date value */
             //canvas.drawRect(30, 30, 60, 60, rectPaint);
@@ -477,7 +480,10 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
 
             /* display rectangle to hold day and date */
             canvas.drawRect(dateXOffset - 21f, mCenterY + 4f, dateXOffset + 28f, mCenterY - 23f, rectBkgPaint);
-            canvas.drawText(dateText, dateXOffset - 21f, mCenterY, datePaint);
+            //canvas.drawText(dateText, dateXOffset - 21f, mCenterY, datePaint);
+            canvas.drawText(dayText, dateXOffset - 15f, mCenterY - 2f, datePaint);
+            canvas.drawText(dateText, dateXOffset - 12f, mCenterY + 19f, datePaint);
+
 
             /* Get battery status level */
             IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
