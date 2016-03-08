@@ -9,8 +9,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.ColorMatrix;
-import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
@@ -22,7 +20,6 @@ import android.support.v7.graphics.Palette;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
-import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
 
@@ -127,9 +124,6 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             @Override
             public void handleMessage(Message message) {
 
-                if (Log.isLoggable(TAG, Log.DEBUG)) {
-                    Log.d(TAG, "updating time");
-                }
                 invalidate();
                 if (shouldTimerBeRunning()) {
                     long timeMs = System.currentTimeMillis();
@@ -143,9 +137,6 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
 
         @Override
         public void onCreate(SurfaceHolder holder) {
-            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG, "onCreate");
-            }
             super.onCreate(holder);
 
             /* Initialize your watch face */
@@ -240,10 +231,6 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
                         @Override
                         public void onGenerated(Palette palette) {
                             if (palette != null) {
-                                if (Log.isLoggable(TAG, Log.DEBUG)) {
-                                    Log.d(TAG, "Palette: " + palette);
-                                }
-
                                 mWatchHandHighlightColor = palette.getVibrantColor(Color.BLUE);
                                 mWatchHandColor = palette.getLightVibrantColor(Color.WHITE);
                                 mWatchHandShadowColor = palette.getDarkMutedColor(Color.BLACK);
@@ -265,9 +252,6 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
         public void onPropertiesChanged(Bundle properties) {
             super.onPropertiesChanged(properties);
             /* get device features (burn-in, low-bit ambient) */
-            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG, "onPropertiesChanged: low-bit ambient = " + mLowBitAmbient);
-            }
             mLowBitAmbient = properties.getBoolean(PROPERTY_LOW_BIT_AMBIENT, false);
             mBurnInProtection = properties.getBoolean(PROPERTY_BURN_IN_PROTECTION, false);
         }
@@ -283,9 +267,6 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
         public void onAmbientModeChanged(boolean inAmbientMode) {
             super.onAmbientModeChanged(inAmbientMode);
             /* the wearable switched between modes */
-            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG, "onAmbientModeChanged: " + inAmbientMode);
-            }
             mAmbient = inAmbientMode;
 
             updateWatchHandStyle();
@@ -354,9 +335,6 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
 
         @Override
         public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-            if (Log.isLoggable(TAG, Log.VERBOSE)) {
-                Log.v(TAG, "onSurfaceChanged");
-            }
             super.onSurfaceChanged(holder, format, width, height);
 
             /*
@@ -394,32 +372,14 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
              * efficient to create a black/white version (png, etc.) and load that when you need it.
              */
             if (!mBurnInProtection && !mLowBitAmbient) {
-                //initGrayBackgroundBitmap();
                 mAmbientBackgroundBitmap = Bitmap.createScaledBitmap(mAmbientBackgroundBitmap,
                         (int) (mAmbientBackgroundBitmap.getWidth() * scaleWidth),
                         (int) (mAmbientBackgroundBitmap.getHeight() * scaleHeight), true);
             }
         }
 
-        private void initGrayBackgroundBitmap() {
-            mGrayBackgroundBitmap = Bitmap.createBitmap(
-                    mBackgroundBitmap.getWidth(),
-                    mBackgroundBitmap.getHeight(),
-                    Bitmap.Config.ARGB_8888);
-            Canvas canvas = new Canvas(mGrayBackgroundBitmap);
-            Paint grayPaint = new Paint();
-            ColorMatrix colorMatrix = new ColorMatrix();
-            colorMatrix.setSaturation(0);
-            ColorMatrixColorFilter filter = new ColorMatrixColorFilter(colorMatrix);
-            grayPaint.setColorFilter(filter);
-            canvas.drawBitmap(mBackgroundBitmap, 0, 0, grayPaint);
-        }
-
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {
-            if (Log.isLoggable(TAG, Log.VERBOSE)) {
-              Log.v(TAG, "onDraw");
-            }
             long now = System.currentTimeMillis();
             mCalendar.setTimeInMillis(now);
 
@@ -427,7 +387,6 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             if (mAmbient && (mLowBitAmbient || mBurnInProtection)) {
                 canvas.drawColor(Color.BLACK);
             } else if (mAmbient) {
-                //canvas.drawBitmap(mGrayBackgroundBitmap, 0, 0, mBackgroundPaint);
                 canvas.drawBitmap(mAmbientBackgroundBitmap, 0, 0, mBackgroundPaint);
             } else {
                 canvas.drawBitmap(mBackgroundBitmap, 0, 0, mBackgroundPaint);
@@ -471,16 +430,8 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             String formattedDateOfMonth = new SimpleDateFormat("dd").format(mCalendar.getTime());
             String dateText = String.valueOf(formattedDateOfMonth);
 
-            //float dateYOffset = computeDateYOffset(dateText, datePaint);
-             /* display rectangle to hold date value */
-            //canvas.drawRect(30, 30, 60, 60, rectPaint);
-//            canvas.drawRect(dateXOffset - 3f, mCenterY + 4f, dateXOffset + 28f, mCenterY - 23f, rectBkgPaint);
-//            canvas.drawRect(dateXOffset - 3f, mCenterY + 4f, dateXOffset + 28f, mCenterY - 23f, rectPaint);
-//            canvas.drawText(dateText, dateXOffset, mCenterY, datePaint);
-
             /* display rectangle to hold day and date */
             canvas.drawRect(dateXOffset - 21f, mCenterY + 4f, dateXOffset + 28f, mCenterY - 23f, rectBkgPaint);
-            //canvas.drawText(dateText, dateXOffset - 21f, mCenterY, datePaint);
             canvas.drawText(dayText, dateXOffset - 15f, mCenterY - 2f, datePaint);
             canvas.drawText(dateText, dateXOffset - 12f, mCenterY + 19f, datePaint);
 
@@ -547,31 +498,13 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
 
         private float computeXOffset(String text, Paint paint, Rect watchBounds) {
             float centerX = watchBounds.exactCenterX();
-            float timeLength = paint.measureText(text);
-            //return centerX - (timeLength / 2.0f);
             return centerX + (mCenterX * 0.75f);
         }
 
         private float computeBatteryXOffset(String text, Paint paint, Rect watchBounds) {
             float centerX = watchBounds.exactCenterX();
-            float battLength = paint.measureText(text);
             return centerX - (mCenterX * 0.9f);
         }
-
-//        private float computeTimeYOffset(String timeText, Paint timePaint, Rect watchBounds) {
-//            float centerY = watchBounds.exactCenterY();
-//            Rect textBounds = new Rect();
-//            timePaint.getTextBounds(timeText, 0, timeText.length(), textBounds);
-//            int textHeight = textBounds.height();
-//            return centerY + (textHeight / 2.0f);
-//        }
-
-//        private float computeDateYOffset(String dateText, Paint datePaint) {
-//            Rect textBounds = new Rect();
-//            datePaint.getTextBounds(dateText, 0, dateText.length(), textBounds);
-//            //return textBounds.height() + 10.0f;
-//            return textBounds.height() + 5.0f;
-//        }
 
         @Override
         public void onVisibilityChanged(boolean visible) {
@@ -592,8 +525,6 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
 
         @Override
         public void onApplyWindowInsets(WindowInsets insets) {
-            Log.d(TAG, "onApplyWindowInsets: " + (insets.isRound() ? "round" : "square"));
-
             super.onApplyWindowInsets(insets);
 
             /** Loads offsets / text size based on device type (square vs. round). */
@@ -617,55 +548,24 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
         }
 
         private void registerReceiver() {
-            Log.d(TAG, "Registering receiver");
-
-//            if (mRegisteredTimeZoneReceiver) {
-//                return;
-//            }
-//            mRegisteredTimeZoneReceiver = true;
-//            IntentFilter filter = new IntentFilter(Intent.ACTION_TIMEZONE_CHANGED);
-//            WTMWatchFaceService.this.registerReceiver(mTimeZoneReceiver, filter);
-
             if (!mRegisteredTimeZoneReceiver) {
                 mRegisteredTimeZoneReceiver = true;
                 IntentFilter filter = new IntentFilter(Intent.ACTION_TIMEZONE_CHANGED);
                 WTMWatchFaceService.this.registerReceiver(mTimeZoneReceiver, filter);
             }
-
-            // Register battery level
-//            if (!mRegisteredBatteryPercentageReceiver) {
-//                mRegisteredBatteryPercentageReceiver = true;
-//                IntentFilter filterBattery = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-//                WTMWatchFaceService.this.registerReceiver(mBatInfoReceiver, filterBattery);
-//            }
         }
 
         private void unregisterReceiver() {
-            Log.d(TAG, "Unregistering receiver");
-//            if (!mRegisteredTimeZoneReceiver) {
-//                return;
-//            }
-//            mRegisteredTimeZoneReceiver = false;
-
             if (mRegisteredTimeZoneReceiver) {
                 mRegisteredTimeZoneReceiver = false;
                 WTMWatchFaceService.this.unregisterReceiver(mTimeZoneReceiver);
             }
-
-            // Unregister battery receiver
-//            if (mRegisteredBatteryPercentageReceiver) {
-//                mRegisteredBatteryPercentageReceiver = false;
-//                WTMWatchFaceService.this.unregisterReceiver(mBatInfoReceiver);
-//            }
         }
 
         /**
          * Starts/stops the {@link #mUpdateTimeHandler} timer based on the state of the watch face.
          */
         private void updateTimer() {
-            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG, "updateTimer");
-            }
             mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
             if (shouldTimerBeRunning()) {
                 mUpdateTimeHandler.sendEmptyMessage(MSG_UPDATE_TIME);
@@ -680,5 +580,4 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             return isVisible() && !mAmbient;
         }
     }
-
 }
