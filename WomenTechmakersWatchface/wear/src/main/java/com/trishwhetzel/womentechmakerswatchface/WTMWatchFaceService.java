@@ -160,7 +160,7 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
             mBackgroundPaint.setColor(Color.BLACK);
 
             mBackgroundBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.logo_v2);
-            mAmbientBackgroundBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ambient_logo);
+            mAmbientBackgroundBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ambient_logo_2);
 
             Resources resources = WTMWatchFaceService.this.getResources();
 
@@ -611,7 +611,7 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
         }
 
         private void registerReceiver() {
-            Log.d(TAG, "Registering");
+            Log.d(TAG, "Registering receiver");
 
 //            if (mRegisteredTimeZoneReceiver) {
 //                return;
@@ -635,7 +635,7 @@ public class WTMWatchFaceService extends CanvasWatchFaceService {
         }
 
         private void unregisterReceiver() {
-            Log.d(TAG, "Unregistering");
+            Log.d(TAG, "Unregistering receiver");
 //            if (!mRegisteredTimeZoneReceiver) {
 //                return;
 //            }
